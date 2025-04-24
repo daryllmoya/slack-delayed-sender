@@ -19,7 +19,7 @@ const MessageInput = ({ message, onMessageChange }: MessageInputProps) => {
     if (value.length > MAX_MESSAGE_LENGTH) {
       toast({
         title: 'Message too long',
-        description: `Please limit your message to ${MAX_MESSAGE_LENGTH} characters.`,
+        description: `Please limit your message to ${MAX_MESSAGE_LENGTH} characters`,
         variant: 'destructive',
       });
       return;

@@ -39,7 +39,7 @@ const DelayInput = ({
     if (!['seconds', 'minutes', 'hours'].includes(value)) {
       toast({
         title: 'Invalid unit selected',
-        description: 'Please select a valid unit (seconds, minutes, hours).',
+        description: 'Please select a valid unit (seconds, minutes, hours)',
         variant: 'destructive',
       });
       return;

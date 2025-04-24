@@ -20,15 +20,16 @@ const SlackHookInput = ({
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const url = event.target.value;
     onWebhookUrlChange(url);
-    if (isValidUrl(url)) {
-      onWebhookUrlChange(url);
-    } else {
+  };
+
+  const handleBlur = (event: ChangeEvent<HTMLInputElement>) => {
+    const url = event.target.value;
+    if (url && !isValidUrl(url)) {
       toast({
         title: 'Invalid URL',
-        description: 'Please enter a valid Slack webhook URL.',
+        description: 'Please enter a valid Slack webhook URL',
         variant: 'destructive',
       });
-      onWebhookUrlChange('');
     }
   };
 
@@ -41,6 +42,7 @@ const SlackHookInput = ({
         placeholder="Enter your Slack webhook URL"
         value={webhookUrl}
         onChange={handleChange}
+        onBlur={handleBlur}
         required
       />
     </div>

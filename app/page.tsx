@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import DelayInput from './components/DelayedInput';
 import MessageInput from './components/MessageInput';
 import SlackHookInput from './components/SlackHookInput';
 import SendButton from './components/SendButton';
+
 import { useToast } from '@/hooks/use-toast';
+
+import { isValidUrl } from './common/utils';
 
 const Home = () => {
   const { toast } = useToast();
@@ -15,13 +19,18 @@ const Home = () => {
   const [webhookUrl, setWebhookUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const isSendButtonDisabled = !delay || !message || !webhookUrl;
+  const isDelayInvalid = !delay?.toString().length;
+  const isMessageEmpty = !message;
+  const isWebhookUrlInvalid = !webhookUrl || !isValidUrl(webhookUrl);
+
+  const isSendButtonDisabled =
+    isDelayInvalid || isMessageEmpty || isWebhookUrlInvalid;
 
   const handleSend = async () => {
     if (!delay || !message || !webhookUrl) {
       toast({
         title: 'Missing Fields',
-        description: 'Please fill out all fields before sending.',
+        description: 'Please fill out all fields before sending',
         variant: 'destructive',
       });
       return;
@@ -51,9 +60,13 @@ const Home = () => {
 
         if (!response.ok) {
           const error = await response.json();
+          const errorMessage = error.error?.includes('<HTML>')
+            ? 'Failed to send the message. Please check your webhook URL or try again later.'
+            : error.error || 'An unexpected error occurred';
+
           toast({
             title: 'Error Sending Message',
-            description: error.error || 'An unexpected error occurred.',
+            description: errorMessage,
             variant: 'destructive',
           });
           return;
@@ -61,7 +74,7 @@ const Home = () => {
 
         toast({
           title: 'Message Sent',
-          description: 'Your message was successfully sent to Slack.',
+          description: 'Your message was successfully sent to Slack',
           variant: 'default',
         });
 
@@ -72,7 +85,7 @@ const Home = () => {
       } catch {
         toast({
           title: 'Error Sending Message',
-          description: 'Failed to connect to the Slack API.',
+          description: 'Failed to connect to the Slack API',
           variant: 'destructive',
         });
       } finally {
