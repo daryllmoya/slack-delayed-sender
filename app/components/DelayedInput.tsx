@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { ChangeEvent } from 'react';
 
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -12,25 +12,27 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 type DelayInputProps = {
+  delay: number | null;
   onDelayChange: (delay: number | null) => void;
-  onUnitChange: (unit: string) => void;
+  delayUnit: string;
+  onDelayUnitChange: (unit: string) => void;
 };
 
-const DelayInput = ({ onDelayChange, onUnitChange }: DelayInputProps) => {
+const DelayInput = ({
+  delay,
+  onDelayChange,
+  delayUnit,
+  onDelayUnitChange,
+}: DelayInputProps) => {
   const { toast } = useToast();
 
-  const [delay, setDelay] = useState<number | null>(null);
-  const [unit, setUnit] = useState<string>('seconds');
-
-  const handleDelayChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDelayChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value, 10);
     if (isNaN(value) || value < 0) {
-      setDelay(null);
       onDelayChange(null);
       return;
     }
-    setDelay(isNaN(value) ? null : value);
-    onDelayChange(isNaN(value) ? null : value);
+    onDelayChange(value);
   };
 
   const handleUnitChange = (value: string) => {
@@ -42,8 +44,7 @@ const DelayInput = ({ onDelayChange, onUnitChange }: DelayInputProps) => {
       });
       return;
     }
-    setUnit(value);
-    onUnitChange(value);
+    onDelayUnitChange(value);
   };
 
   return (
@@ -60,7 +61,7 @@ const DelayInput = ({ onDelayChange, onUnitChange }: DelayInputProps) => {
           required
           className="border-gray-300 focus:ring-blue-500 focus:border-blue-500"
         />
-        <Select value={unit} onValueChange={handleUnitChange}>
+        <Select value={delayUnit} onValueChange={handleUnitChange}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Unit" />
           </SelectTrigger>

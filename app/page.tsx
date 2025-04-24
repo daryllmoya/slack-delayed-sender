@@ -58,11 +58,17 @@ const Home = () => {
           });
           return;
         }
+
         toast({
           title: 'Message Sent',
           description: 'Your message was successfully sent to Slack.',
           variant: 'default',
         });
+
+        setDelay(null);
+        setDelayUnit('seconds');
+        setMessage('');
+        setWebhookUrl('');
       } catch {
         toast({
           title: 'Error Sending Message',
@@ -79,9 +85,17 @@ const Home = () => {
     <main className="flex flex-col items-center justify-center min-h-screen p-4 space-y-6">
       <h1 className="text-2xl font-bold">Delayed Slack Message Sender</h1>
       <div className="space-y-4 w-full max-w-md">
-        <DelayInput onDelayChange={setDelay} onUnitChange={setDelayUnit} />
-        <MessageInput onMessageChange={setMessage} />
-        <SlackHookInput onWebhookUrlChange={setWebhookUrl} />
+        <DelayInput
+          delay={delay}
+          onDelayChange={setDelay}
+          delayUnit={delayUnit}
+          onDelayUnitChange={setDelayUnit}
+        />
+        <MessageInput message={message} onMessageChange={setMessage} />
+        <SlackHookInput
+          webhookUrl={webhookUrl}
+          onWebhookUrlChange={setWebhookUrl}
+        />
         <SendButton
           isDisabled={isSendButtonDisabled}
           isLoading={isLoading}

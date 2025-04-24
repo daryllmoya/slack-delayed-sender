@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { ChangeEvent } from 'react';
 
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -7,15 +7,14 @@ import { useToast } from '@/hooks/use-toast';
 import { MAX_MESSAGE_LENGTH } from '../common/constants';
 
 type MessageInputProps = {
+  message: string;
   onMessageChange: (message: string) => void;
 };
 
-const MessageInput = ({ onMessageChange }: MessageInputProps) => {
+const MessageInput = ({ message, onMessageChange }: MessageInputProps) => {
   const { toast } = useToast();
 
-  const [message, setMessage] = useState<string>('');
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     if (value.length > MAX_MESSAGE_LENGTH) {
       toast({
@@ -25,7 +24,6 @@ const MessageInput = ({ onMessageChange }: MessageInputProps) => {
       });
       return;
     }
-    setMessage(value);
     onMessageChange(value);
   };
 

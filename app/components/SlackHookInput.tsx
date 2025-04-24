@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { ChangeEvent } from 'react';
 
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -7,16 +7,19 @@ import { useToast } from '@/hooks/use-toast';
 import { isValidUrl } from '../common/utils';
 
 type SlackHookInputProps = {
+  webhookUrl: string;
   onWebhookUrlChange: (url: string) => void;
 };
 
-const SlackHookInput = ({ onWebhookUrlChange }: SlackHookInputProps) => {
+const SlackHookInput = ({
+  webhookUrl,
+  onWebhookUrlChange,
+}: SlackHookInputProps) => {
   const { toast } = useToast();
-  const [webhookUrl, setWebhookUrl] = useState<string>('');
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const url = event.target.value;
-    setWebhookUrl(url);
+    onWebhookUrlChange(url);
     if (isValidUrl(url)) {
       onWebhookUrlChange(url);
     } else {
