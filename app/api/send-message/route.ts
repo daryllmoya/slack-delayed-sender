@@ -1,10 +1,10 @@
-import { isValidUrl } from '@/app/common/utils';
+import { isValidSlackWebhookUrl } from '@/app/components/FormSlackDelayedSender/utils';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   const { webhookUrl, message } = await req.json();
 
-  if (!webhookUrl || !isValidUrl(webhookUrl)) {
+  if (!webhookUrl || !isValidSlackWebhookUrl(webhookUrl)) {
     return NextResponse.json(
       { error: 'Invalid Slack webhook URL' },
       { status: 400 }
