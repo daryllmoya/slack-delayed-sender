@@ -10,7 +10,8 @@
     "lint": "next lint",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
-    "clean:install": "npx rimraf .next npx rimraf node_modules && npx rimraf package-lock.json && npm install"
+    "type:check": "tsc --noEmit",
+    "clean:install": "npx rimraf .next node_modules package-lock.json tsconfig.tsbuildinfo && npm install"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
