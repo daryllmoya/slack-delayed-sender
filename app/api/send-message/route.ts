@@ -11,7 +11,7 @@ import {
   validateMessageLengthForPlatform,
 } from '@/app/components/FormDelayedSender/utils';
 
-export const jsonError = (message: string, status: number = 400) =>
+const jsonError = (message: string, status: number = 400) =>
   NextResponse.json({ error: message }, { status });
 
 export async function POST(req: Request) {
