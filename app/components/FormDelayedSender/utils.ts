@@ -86,8 +86,6 @@ export const sendMessage = async (
     }
   } catch (error) {
     toast({
-      className:
-        'top-0 right-0 flex fixed md:max-w-[420px] md:top-4 md:right-4',
       title: 'Error Sending Message',
       description: (error as Error).message || 'Connection failed',
       variant: 'destructive',
