@@ -11,9 +11,12 @@ export const formSlackDelayedSenderSchema = z.object({
   delayUnit: z.enum(['seconds', 'minutes', 'hours']),
   message: z
     .string()
-    .nonempty({ message: 'Message cannot be empty' })
     .max(MAX_MESSAGE_LENGTH, {
       message: `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`,
+    })
+    .transform((val) => val.trim().replace(/\s+/g, ' '))
+    .refine((val) => val.length > 0, {
+      message: 'Message cannot be empty or contain only spaces',
     }),
   webhookUrl: z
     .string()
