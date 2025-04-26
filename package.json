@@ -1,5 +1,5 @@
 {
-  "name": "slack-delayed-sender",
+  "name": "delayed-message-sender",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,7 @@
     "lint": "next lint",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
-    "clean:install": "npx rimraf node_modules && npx rimraf package-lock.json && npm install"
+    "clean:install": "npx rimraf .next npx rimraf node_modules && npx rimraf package-lock.json && npm install"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
