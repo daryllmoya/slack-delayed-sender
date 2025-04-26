@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { debounce } from 'lodash';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useToast } from '@/hooks/use-toast';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -12,77 +15,93 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  FormSlackDelayedSenderData,
-  formSlackDelayedSenderSchema,
-} from './types';
-import { convertDelayToMs } from './utils';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import { debounce } from 'lodash';
+import { Textarea } from '@/components/ui/textarea';
 
-const FormSlackDelayedSender = () => {
+import { formDelayedSenderSchema } from './schema';
+import {
+  DELAY_UNIT_LABELS,
+  DELAY_UNIT_OPTIONS,
+  FormDelayedSenderData,
+  PLATFORM_LABELS,
+  PLATFORM_OPTIONS,
+} from './types';
+import { convertDelayToMs, sendMessage } from './utils';
+
+const FormDelayedSender = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const formattedCountdown =
+    countdown === 1 ? '1 second' : `${countdown} seconds`;
+
+  const delayUnitItems = useMemo(
+    () =>
+      DELAY_UNIT_OPTIONS.map((value) => (
+        <SelectItem key={value} value={value}>
+          {DELAY_UNIT_LABELS[value]}
+        </SelectItem>
+      )),
+    []
+  );
+
+  const platformItems = useMemo(
+    () =>
+      PLATFORM_OPTIONS.map((value) => (
+        <SelectItem key={value} value={value}>
+          {PLATFORM_LABELS[value]}
+        </SelectItem>
+      )),
+    []
+  );
 
   const {
     control,
     handleSubmit,
-    watch,
     trigger,
     formState: { errors },
     reset,
-  } = useForm<FormSlackDelayedSenderData>({
-    resolver: zodResolver(formSlackDelayedSenderSchema),
+  } = useForm<FormDelayedSenderData>({
+    resolver: zodResolver(formDelayedSenderSchema),
     defaultValues: {
       delay: 1,
       delayUnit: 'seconds',
       message: '',
+      platform: 'slack',
       webhookUrl: '',
     },
   });
 
-  const webhookUrl = watch('webhookUrl');
-
-  const validateWebhookUrl = debounce(async () => {
-    await trigger('webhookUrl');
-  }, 500);
+  const webhookUrl = useWatch({ control, name: 'webhookUrl' });
 
   useEffect(() => {
+    const handler = debounce(() => {
+      trigger('webhookUrl');
+    }, 1000);
+
     if (webhookUrl) {
-      validateWebhookUrl();
+      handler();
     }
-    return () => {
-      validateWebhookUrl.cancel();
-    };
-  }, [webhookUrl, validateWebhookUrl]);
+
+    return () => handler.cancel();
+  }, [webhookUrl, trigger]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    if (!isSubmitting || countdown === null) return;
 
-    if (isSubmitting && countdown !== null) {
-      interval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev !== null && prev > 0) {
-            return prev - 1;
-          } else {
-            clearInterval(interval!);
-            return null;
-          }
-        });
-      }, 1000);
+    if (countdown <= 0) {
+      setCountdown(null);
+      return;
     }
 
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isSubmitting, countdown]);
+    const timeout = setTimeout(() => {
+      setCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
 
-  const onSubmit = async (data: FormSlackDelayedSenderData) => {
-    const { delay, delayUnit, message, webhookUrl } = data;
+    return () => clearTimeout(timeout);
+  }, [countdown, isSubmitting]);
+
+  const onSubmit = async (data: FormDelayedSenderData) => {
+    const { delay, delayUnit, message, platform, webhookUrl } = data;
 
     const delayInMs = convertDelayToMs(delay, delayUnit);
 
@@ -90,42 +109,17 @@ const FormSlackDelayedSender = () => {
     setCountdown(Math.floor(delayInMs / 1000));
 
     setTimeout(async () => {
-      try {
-        const response = await fetch('/api/send-message', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            webhookUrl,
-            message: `From Daryll Moya's Slack Bot: ${message}`,
-          }),
-        });
-
-        const responseBody = await response.json();
-
-        if (response.ok) {
-          toast({
-            title: 'Message Sent',
-            description: 'Your message was successfully sent to Slack',
-            variant: 'default',
-          });
-          reset();
-        } else {
-          toast({
-            title: 'Error Sending Message',
-            description: responseBody.error || 'An unexpected error occurred',
-            variant: 'destructive',
-          });
-        }
-      } catch {
-        toast({
-          title: 'Error Sending Message',
-          description: 'Failed to connect to the Slack API',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsSubmitting(false);
-        setCountdown(null);
-      }
+      sendMessage(
+        {
+          platform,
+          webhookUrl,
+          message: `From Daryll's Next.js App: ${message}`,
+        },
+        reset,
+        setIsSubmitting,
+        setCountdown,
+        toast
+      );
     }, delayInMs);
   };
 
@@ -151,8 +145,9 @@ const FormSlackDelayedSender = () => {
                 onChange={(e) => field.onChange(e.target.valueAsNumber)}
                 className="border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                 disabled={isSubmitting}
-                aria-invalid={!!errors.delay}
+                aria-busy={isSubmitting}
                 aria-describedby={errors.delay ? 'delayError' : undefined}
+                aria-invalid={!!errors.delay}
               />
             )}
           />
@@ -164,11 +159,7 @@ const FormSlackDelayedSender = () => {
                 <SelectTrigger className="w-32" disabled={isSubmitting}>
                   <SelectValue placeholder="Unit" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="seconds">Seconds</SelectItem>
-                  <SelectItem value="minutes">Minutes</SelectItem>
-                  <SelectItem value="hours">Hours</SelectItem>
-                </SelectContent>
+                <SelectContent>{delayUnitItems}</SelectContent>
               </Select>
             )}
           />
@@ -180,20 +171,41 @@ const FormSlackDelayedSender = () => {
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="message">Slack Message:</Label>
+        <Label htmlFor="platform">Platform:</Label>
+        <Controller
+          name="platform"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="w-full" disabled={isSubmitting}>
+                <SelectValue placeholder="Select a platform" />
+              </SelectTrigger>
+              <SelectContent>{platformItems}</SelectContent>
+            </Select>
+          )}
+        />
+        {errors.platform && (
+          <p id="platformError" className="text-sm text-red-500">
+            {errors.platform.message}
+          </p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="message">Message:</Label>
         <Controller
           name="message"
           control={control}
           render={({ field }) => (
-            <Input
+            <Textarea
               {...field}
-              type="text"
               id="message"
-              placeholder="Enter your Slack message"
-              className="border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter your message"
+              className="border-gray-300 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              rows={4}
               disabled={isSubmitting}
-              aria-invalid={!!errors.message}
+              aria-busy={isSubmitting}
               aria-describedby={errors.message ? 'messageError' : undefined}
+              aria-invalid={!!errors.message}
             />
           )}
         />
@@ -204,22 +216,23 @@ const FormSlackDelayedSender = () => {
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="webhookUrl">Slack Webhook URL:</Label>
+        <Label htmlFor="webhookUrl">Webhook URL:</Label>
         <Controller
           name="webhookUrl"
           control={control}
           render={({ field }) => (
-            <Input
+            <Textarea
               {...field}
-              type="text"
               id="webhookUrl"
-              placeholder="Enter your Slack webhook URL"
-              className="border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter the webhook URL"
+              className="border-gray-300 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              rows={2}
               disabled={isSubmitting}
-              aria-invalid={!!errors.webhookUrl}
+              aria-busy={isSubmitting}
               aria-describedby={
                 errors.webhookUrl ? 'webhookUrlError' : undefined
               }
+              aria-invalid={!!errors.webhookUrl}
             />
           )}
         />
@@ -237,12 +250,13 @@ const FormSlackDelayedSender = () => {
             ? 'bg-gray-400 cursor-not-allowed'
             : 'bg-blue-500 hover:bg-blue-600'
         }`}
+        aria-busy={isSubmitting}
       >
         {isSubmitting && <Loader2 className="animate-spin h-4 w-4" />}
         <span>
           {isSubmitting
             ? countdown !== null
-              ? `Sending in ${countdown} second(s)...`
+              ? `Sending in ${formattedCountdown}...`
               : 'Sending...'
             : 'Send'}
         </span>
@@ -251,4 +265,4 @@ const FormSlackDelayedSender = () => {
   );
 };
 
-export default FormSlackDelayedSender;
+export default FormDelayedSender;

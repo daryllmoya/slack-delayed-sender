@@ -1,5 +1,5 @@
 {
-  "name": "slack-delayed-sender",
+  "name": "delayed-message-sender",
   "version": "0.1.0",
   "private": true,
   "scripts": {
